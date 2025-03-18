@@ -1,0 +1,105 @@
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { motion } from "framer-motion";
+
+export default function Pastebin() {
+  const [text, setText] = useState("");
+  const [title, setTitle] = useState("");
+  const [password, setPassword] = useState("");
+  const [pastes, setPastes] = useState([]);
+
+  const handleSave = () => {
+    if (text.trim() !== "") {
+      setPastes([...pastes, { title, text, password, id: Date.now() }]);
+      setText("");
+      setTitle("");
+      setPassword("");
+    }
+  };
+
+  const handleDownload = (paste) => {
+    const blob = new Blob([paste.text], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${paste.title || "Untitled_Paste"}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto space-y-8 bg-gradient-to-r from-blue-900 to-purple-900 min-h-screen text-white rounded-xl shadow-2xl">
+      <Card className="p-6 shadow-2xl bg-opacity-80 backdrop-blur-lg border border-gray-500 rounded-2xl">
+        <CardContent className="space-y-6">
+          <Input
+            placeholder="Title (Optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="bg-gray-800 text-white placeholder-gray-400 border-none focus:ring-2 focus:ring-blue-400"
+          />
+          <Textarea
+            placeholder="Paste your text here..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="h-40 bg-gray-800 text-white placeholder-gray-400 border-none focus:ring-2 focus:ring-blue-400 rounded-lg"
+          />
+          <Input
+            type="password"
+            placeholder="Set a password (Optional)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="bg-gray-800 text-white placeholder-gray-400 border-none focus:ring-2 focus:ring-blue-400"
+          />
+          <Button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 rounded-xl shadow-lg">
+            Save Paste
+          </Button>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-6">
+        {pastes.map((paste) => (
+          <motion.div key={paste.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <Card className="p-6 border-l-4 border-blue-400 bg-gray-900 bg-opacity-80 backdrop-blur-lg rounded-2xl shadow-xl">
+              <CardContent>
+                <h3 className="font-semibold text-lg text-blue-300">{paste.title || "Untitled Paste"}</h3>
+                {paste.password ? (
+                  <Input
+                    type="password"
+                    placeholder="Enter password to view"
+                    className="mt-2 bg-gray-800 text-white placeholder-gray-400 border-none focus:ring-2 focus:ring-blue-400"
+                    onChange={(e) => {
+                      if (e.target.value === paste.password) {
+                        document.getElementById(`paste-${paste.id}`).style.display = "block";
+                      }
+                    }}
+                  />
+                ) : null}
+                <pre id={`paste-${paste.id}`} className="whitespace-pre-wrap bg-gray-800 p-3 rounded-lg text-gray-300 border border-gray-600 overflow-x-auto" style={{ display: paste.password ? "none" : "block" }}>
+                  {paste.text}
+                </pre>
+                <Button onClick={() => handleDownload(paste)} className="mt-4 bg-green-500 hover:bg-green-600 transition-all duration-300 rounded-xl shadow-lg">
+                  Download
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Bookmarklet Script
+export function getBookmarklet() {
+  return `javascript:(function(){
+    var text = window.getSelection().toString();
+    if (text) {
+      window.open('YOUR_PASTEBIN_URL?text=' + encodeURIComponent(text), '_blank');
+    } else {
+      alert('Please select some text first!');
+    }
+  })();`;
+}
